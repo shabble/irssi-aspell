@@ -19,6 +19,10 @@ our %IRSSI = (
               description => 'aspell wrapper',
              );
 
+# ---------------------------
+#           Globals
+# ---------------------------
+
 my $DEBUG = 1;
 
 my @word_pos_array;
@@ -33,25 +37,44 @@ my $original_win_ref;
 
 my $corrections_active;
 
+
+# ---------------------------
+#      key constants
+# ---------------------------
+
+sub K_ESC () { 27  }
+sub K_RET () { 10  }
+sub K_SPC () { 32  }
+sub K_0   () { 48  }
+sub K_9   () { 57  }
+sub K_N   () { 110 }
+sub K_P   () { 112 }
+sub K_I   () { 105 }
+
+
 sub check_line {
 	my ($line) = @_;
 
-    @word_pos_array = ();
-    @suggestions = ();
-    $index = 0;
-    close_temp_split();
+    # reset everything
     $corrections_active = 0;
+    $index              = 0;
+    @word_pos_array     = ();
+    @suggestions        = ();
+    close_temp_split();
 
     # split into an array of words on whitespace, keeping track of
-    # positions of each.
+    # positions of each, as well as the size of whitespace.
 
-    my $l_copy = $line;
     my $pos = 0;
+
     _debug('check_line processing "%s"', $line);
-    while ($l_copy =~ m/\G(\S+)(\s*)/g) {
+
+    while ($line =~ m/\G(\S+)(\s*)/g) {
         push @word_pos_array, { word => $1, pos => $pos };
         $pos += length ($1.$2);
     }
+
+    return unless @word_pos_array > 0;
 
     process_word($word_pos_array[0]);
 }
@@ -105,16 +128,23 @@ sub sig_gui_key_pressed {
 
     my $char = chr($key);
 
-    if ($key == 27) {
+    if ($key == K_ESC) {
         spellcheck_finish();
-    } elsif ($key >= ord("0") && $key <= ord("9")) {
+
+    } elsif ($key >= K_0 && $key <= K_9) {
         _debug("Selecting word: $char");
         spellcheck_select_word($char);
-    } elsif ($key == ord(" ")) {
+
+    } elsif ($key == K_SPC) {
         _debug("skipping word");
         spellcheck_next_word();
-    } elsif ($key == ord('i')) {
+    } elsif ($key == K_I) {
         _print("Not implemented yet :(");
+    } elsif ($key == K_N) { # next 10 results
+        _print("\x032,3Not implemented yet :(");
+    } elsif ($key == K_P) { # prev 10 results
+        _print("Not implemented yet :(");
+
     } else {
         spellcheck_finish();
     }
@@ -124,7 +154,8 @@ sub sig_gui_key_pressed {
 
 sub spellcheck_next_word {
     $index++;
-    if ($index > @word_pos_array) {
+
+    if ($index >= @word_pos_array) {
         _debug("End of words");
         spellcheck_finish();
         return;
@@ -153,7 +184,7 @@ sub _debug {
 sub _print {
     my ($fmt, @args) = @_;
     my $str = sprintf($fmt, @args);
-    Irssi::active_win->print($str);
+    Irssi::active_win->print('%g' . $str . '%n');
 }
 
 # Read from the argument list
@@ -173,6 +204,10 @@ sub create_temp_split {
     Irssi::signal_add_first('window created', 'sig_win_created');
     Irssi::command('window new split');
     Irssi::signal_remove('window created', 'sig_win_created');
+}
+
+sub UNLOAD {
+    close_temp_split();
 }
 
 sub close_temp_split {
@@ -251,9 +286,13 @@ sub print_suggestions {
     my @print_suggestions
       = map { sprintf("(%d) %s", $i++, $_) } @suggestions;
     $split_win_ref->command("/^scrollback clear");
-    $split_win_ref->print('%%_Select a number, SPC to ignore, ' .
-                          'or i to add to personal dictionary%%_');
-    $split_win_ref->print(join(" ", @print_suggestions));
+    my $msg = sprintf('%s Select a number or SPC to ignore this word. Any '
+                      . 'other key cancels %s', '%_', '%_');
+
+    my $word = $word_pos_array[$index]->{word};
+
+    $split_win_ref->print($msg);
+    $split_win_ref->print('%_<' . $word . '>%_ ' .  join(" ", @print_suggestions));
 }
 
 sub sig_setup_changed {
