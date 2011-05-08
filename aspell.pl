@@ -22,7 +22,7 @@ our %IRSSI = (
 my $DEBUG = 1;
 
 my @word_pos_array;
-my $index = 0;
+my $index;
 
 my @suggestions;
 
@@ -35,9 +35,16 @@ my $corrections_active;
 
 sub check_line {
 	my ($line) = @_;
+
     @word_pos_array = ();
+    @suggestions = ();
+    $index = 0;
+    close_temp_split();
+    $corrections_active = 0;
+
     # split into an array of words on whitespace, keeping track of
     # positions of each.
+
     my $l_copy = $line;
     my $pos = 0;
     _debug('check_line processing "%s"', $line);
@@ -46,48 +53,36 @@ sub check_line {
         $pos += length ($1.$2);
     }
 
-    foreach my $word (@word_pos_array) {
-        if (not check_word($word)) {
-            $corrections_active = 1;
-            my @suggestions = get_suggestions($word);
-
-            if (not temp_split_active()) {
-                create_temp_split();
-            } else {
-                print_suggestions();
-            }
-        }
-    }
+    process_word($word_pos_array[0]);
 }
 
+sub process_word {
+    my ($word_obj) = @_;
 
+    my $word = $word_obj->{word};
 
+    if (not $aspell->check($word)) {
 
-#    Irssi::active_win->print(Dumper(\@array));
+        _debug("Word '%s' is incorrect", $word);
+        $corrections_active = 1;
+        @suggestions = get_suggestions($word);
+        highlight_incorrect_word($word_obj);
 
-
-
-# Strip non-alpha/space and form the command
-# $inputline =~ tr/a-zA-Z' //cd;
-
-
-# my $cmd = "aspell -a <<< \"$inputline\"";
-# # Run the command and parse the output. Print the output of an all clear message
-# my @results = split(/\n/, `$cmd`);
-# shift @results;
-# @results = grep {$_ ne "*"} @results;
-# Irssi::active_win()->print("spell: $_", MSGLEVEL_CRAP ) for @results;
-# Irssi::active_win()->print("spell: Nothing found. All good :)", MSGLEVEL_CRAP ) unless @results;
-#}
-
-sub check_word {
-    my ($word) = @_;
-    return $aspell->check($word);
+        if (not temp_split_active()) {
+            _debug("Creating temp split to show candidates");
+            create_temp_split();
+        } else {
+            print_suggestions();
+        }
+    } else {
+        spellcheck_next_word();
+    }
 }
 
 sub get_suggestions {
     my ($word) = @_;
     my @suggestions = $aspell->suggest($word);
+    _debug("Candidates for '$word' are %s", join(", ", @suggestions));
     return @suggestions;
 }
 
@@ -102,7 +97,6 @@ sub cmd_spellcheck_line {
 sub spellcheck_finish {
     $corrections_active = 0;
     close_temp_split();
-
 }
 
 sub sig_gui_key_pressed {
@@ -111,42 +105,49 @@ sub sig_gui_key_pressed {
 
     my $char = chr($key);
 
-    if ($key = 27) {
+    if ($key == 27) {
         spellcheck_finish();
     } elsif ($key >= ord("0") && $key <= ord("9")) {
+        _debug("Selecting word: $char");
         spellcheck_select_word($char);
     } elsif ($key == ord(" ")) {
+        _debug("skipping word");
         spellcheck_next_word();
     } elsif ($key == ord('i')) {
         _print("Not implemented yet :(");
     } else {
         spellcheck_finish();
     }
+
+    Irssi::signal_stop();
 }
 
+sub spellcheck_next_word {
+    $index++;
+    if ($index > @word_pos_array) {
+        _debug("End of words");
+        spellcheck_finish();
+        return;
+    }
+
+    _debug("moving onto the next word: $index");
+    process_word($word_pos_array[$index]);
+
+}
 sub spellcheck_select_word {
     my ($num) = @_;
     my $word = $suggestions[$num];
+    _debug("Selected word $num: $word as correction");
     correct_input_line_word($word_pos_array[$index], $word);
-
 }
 
-sub cmd_spell_skip_next {
-    my $word_obj = $word_pos_array[$index++];
-    Irssi::gui_input_set_pos($word_obj->{pos});
-    _print("Word: %s, pos: %d", $word_obj->{word}, $word_obj->{pos});
-    if ($index == @word_pos_array) {
-        _print("End of array");
-        $index = 0;
-    }
-}
 sub _debug {
     my ($fmt, @args) = @_;
     return unless $DEBUG;
 
     $fmt = '%%RDEBUG:%%n ' . $fmt;
     my $str = sprintf($fmt, @args);
-    Irssi::active_win->print($str);
+    Irssi::window_find_refnum(1)->print($str);
 }
 
 sub _print {
@@ -168,7 +169,7 @@ sub temp_split_active () {
 }
 
 sub create_temp_split {
-
+    $original_win_ref = Irssi::active_win();
     Irssi::signal_add_first('window created', 'sig_win_created');
     Irssi::command('window new split');
     Irssi::signal_remove('window created', 'sig_win_created');
@@ -182,8 +183,12 @@ sub close_temp_split {
     }
 
     # restore original window focus
+    return unless defined $original_win_ref;
+    return unless ref $original_win_ref;
+
     if (Irssi::active_win()->{refnum} != $original_win_ref->{refnum}) {
-        $original_win_ref->set_active();
+        _debug("Winref: %s: %s", ref($original_win_ref), Dumper($original_win_ref));
+        ref($original_win_ref) and $original_win_ref->set_active();
     }
 }
 
@@ -199,6 +204,45 @@ sub configure_split_win {
     print_suggestions();
 }
 
+sub correct_input_line_word {
+    my ($word_obj, $correction) = @_;
+    my $input = Irssi::parse_special('$L');
+
+    my $word = $word_obj->{word};
+    my $pos  = $word_obj->{pos};
+
+    _debug("Index of incorrect word is %d", $index);
+    _debug("Correcting word %s (%d) with %s", $word, $pos, $correction);
+
+    my $orig_length = length $word;
+    my $new_length  = length $correction;
+
+    my $diff = $new_length - $orig_length;
+
+    _debug("diff between $word and $correction is $diff");
+
+    $word_pos_array[$index] = { word => $correction, pos => $pos + $diff };
+    substr($input, $pos, length($word)) = $correction;
+    # now we have to go through and fix up all teh positions since
+    # the correction might be a different length.
+
+    #starting at $index, add the diff to each position.
+    foreach my $new_obj (@word_pos_array[$index..$#word_pos_array]) {
+        $new_obj->{pos} += $diff;
+    }
+
+    _debug("Setting input to new value: '%s'", $input);
+    Irssi::gui_input_set($input);
+
+    _debug("-------------------------------------------------");
+    spellcheck_next_word();
+}
+
+sub highlight_incorrect_word {
+    my ($word_obj) = @_;
+    Irssi::gui_input_set_pos($word_obj->{pos});
+}
+
 sub print_suggestions {
     if (@suggestions > 10) {
         @suggestions = @suggestions[0..9];
@@ -206,35 +250,38 @@ sub print_suggestions {
     my $i = 0;
     my @print_suggestions
       = map { sprintf("(%d) %s", $i++, $_) } @suggestions;
+    $split_win_ref->command("/^scrollback clear");
     $split_win_ref->print('%%_Select a number, SPC to ignore, ' .
                           'or i to add to personal dictionary%%_');
     $split_win_ref->print(join(" ", @print_suggestions));
 }
 
-  sub correct_input_line_word {
-      my ($word_obj, $correction) = @_;
-      my $input = Irssi::parse_special('$L');
-
-      substr($input, $word_obj->{pos}, length($word_obj->{word}), $correction);
-
-      Irssi::gui_input_set($input);
-      spellcheck_next_word();
-  }
+sub sig_setup_changed {
+    $DEBUG = Irssi::settings_get_bool('aspell_debug');
+}
 
 sub init {
+    Irssi::settings_add_bool('aspellchecker', 'aspell_debug', 0);
+
+    sig_setup_changed();
+
+    Irssi::signal_add('setup changed' => \&sig_setup_changed);
+
     _debug("ASpell spellchecker loaded");
+
     $corrections_active = 0;
-    Irssi::signal_add_first('gui key pressed' => \& sig_gui_key_pressed);
+    $index = 0;
+
+    Irssi::signal_add_first('gui key pressed' => \&sig_gui_key_pressed);
 
     Irssi::command_bind('spellcheck', \&cmd_spellcheck_line);
     Irssi::command_bind('spell_next', \&cmd_spell_skip_next);
 
     Irssi::command_bind('spell', 'cmd_spell_args');
-    Irssi::command("/bind meta-d /spellcheck");
-    Irssi::command("/bind meta-f /spell_next");
+    Irssi::command("/^bind meta-d /spellcheck");
     $aspell = Text::Aspell->new;
-    #    _print(Dumper($aspell->fetch_option_keys()));
+
+
 }
 
 init();
-1;
