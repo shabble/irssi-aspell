@@ -12,11 +12,11 @@ if ($@ && $@ =~ m/Can't locate/) {
 }
 
 
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 our %IRSSI = (
-              authors     => 'IsaacG',
+              authors     => 'IsaacG, Enscienced by Shabble',
               name        => 'aspell',
-              description => 'aspell wrapper',
+              description => 'ASpell spellchecking system for Irssi',
              );
 
 # ---------------------------
@@ -51,6 +51,9 @@ sub K_N   () { 110 }
 sub K_P   () { 112 }
 sub K_I   () { 105 }
 
+# ---------------------------
+#        Teh Codez
+# ---------------------------
 
 sub check_line {
 	my ($line) = @_;
@@ -191,7 +194,8 @@ sub _print {
 
 sub cmd_spell_args {
     my ($inputline) = @_;
-    check_line($inputline);
+    _print('%%R%%_ Sorry, this command is currently broken. %%_%%n');
+#    check_line($inputline);
 }
 
 
@@ -309,17 +313,14 @@ sub init {
     _debug("ASpell spellchecker loaded");
 
     $corrections_active = 0;
-    $index = 0;
+    $index              = 0;
 
     Irssi::signal_add_first('gui key pressed' => \&sig_gui_key_pressed);
-
     Irssi::command_bind('spellcheck', \&cmd_spellcheck_line);
-    Irssi::command_bind('spell_next', \&cmd_spell_skip_next);
 
     Irssi::command_bind('spell', 'cmd_spell_args');
-    Irssi::command("/^bind meta-d /spellcheck");
+    #Irssi::command("/^bind meta-d /spellcheck");
     $aspell = Text::Aspell->new;
-
 
 }
 
