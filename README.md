@@ -37,7 +37,7 @@ Shabble (`shabble@#irssi/Freenode`).
 
 * Configuration options to select dictionaries
 * Support for saving to a user dictionary
-* Make the N and P keys cycle though completions > 10
+* __DONE__ Make the N and P keys cycle though completions > 10
 * Do something clever about checking screen width vs suggestion
   string length, and wrap appropriately.
 * Document More Better.

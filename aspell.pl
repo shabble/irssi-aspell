@@ -29,6 +29,7 @@ my @word_pos_array;
 my $index;
 
 my @suggestions;
+my $suggestion_page;
 
 my $aspell;
 
@@ -59,6 +60,7 @@ sub check_line {
 	my ($line) = @_;
 
     # reset everything
+    $suggestion_page    = 0;
     $corrections_active = 0;
     $index              = 0;
     @word_pos_array     = ();
@@ -144,9 +146,19 @@ sub sig_gui_key_pressed {
     } elsif ($key == K_I) {
         _print("Not implemented yet :(");
     } elsif ($key == K_N) { # next 10 results
-        _print("\x032,3Not implemented yet :(");
+
+        if ((scalar @suggestions) > (10 * ($suggestion_page + 1))) {
+            $suggestion_page++;
+        } else {
+            $suggestion_page = 0;
+        }
+        print_suggestions();
+
     } elsif ($key == K_P) { # prev 10 results
-        _print("Not implemented yet :(");
+        if ($suggestion_page > 0) {
+            $suggestion_page--;
+        }
+        print_suggestions();
 
     } else {
         spellcheck_finish();
@@ -283,20 +295,26 @@ sub highlight_incorrect_word {
 }
 
 sub print_suggestions {
-    if (@suggestions > 10) {
-        @suggestions = @suggestions[0..9];
-    }
+    my $count = scalar @suggestions;
+    my $pages = int ($count / 10);
+    my $bot = $suggestion_page * 10;
+    my $top = $bot + 9;
+
+    $top = $#suggestions if $top > $#suggestions;
+
+    my @visible = @suggestions[$bot..$top];
     my $i = 0;
-    my @print_suggestions
-      = map { sprintf("(%d) %s", $i++, $_) } @suggestions;
+    my @visible
+      = map { sprintf("(%d) %s", $i++, $_) } @visible;
     $split_win_ref->command("/^scrollback clear");
-    my $msg = sprintf('%s Select a number or SPC to ignore this word. Any '
-                      . 'other key cancels %s', '%_', '%_');
+    my $msg = sprintf('%s [Pg %d/%d] Select a number or SPC to ignore this word. Any '
+                      . 'other key cancels %s',
+                      '%_', $suggestion_page + 1, $pages + 1, '%_');
 
     my $word = $word_pos_array[$index]->{word};
 
     $split_win_ref->print($msg);
-    $split_win_ref->print('%_<' . $word . '>%_ ' .  join(" ", @print_suggestions));
+    $split_win_ref->print('%_<' . $word . '>%_ ' .  join(" ", @visible));
 }
 
 sub sig_setup_changed {
