@@ -12,7 +12,7 @@ if ($@ && $@ =~ m/Can't locate/) {
 }
 
 
-our $VERSION = '1.1';
+our $VERSION = '1.3';
 our %IRSSI = (
               authors     => 'IsaacG, Enscienced by Shabble',
               name        => 'aspell',
@@ -179,6 +179,7 @@ sub sig_gui_key_pressed {
 
 sub spellcheck_next_word {
     $index++;
+    $suggestion_page = 0;
 
     if ($index >= @word_pos_array) {
         _debug("End of words");
@@ -274,8 +275,31 @@ sub correct_input_line_word {
     my $word = $word_obj->{word};
     my $pos  = $word_obj->{pos};
 
+    # handle punctuation.
+    # - Internal punctuation: "they're" "Bob's"  should be replaced if necessary
+    # - external punctuation: "eg:" should not.
+    # this will also have impact on the position adjustments.
+
+    my $prefix_punct = '';
+    my $suffix_punct = '';
+
+    if ($word =~ m/^([^a-zA-Z0-9]+)/) {
+        $prefix_punct = $1;
+    }
+    if ($word =~ m/([^a-zA-Z0-9]+)$/) {
+        $suffix_punct = $1;
+    }
+    my ($pp_len, $sp_len) = (length($prefix_punct), length($suffix_punct));
+    my $actual_len  = length($word) - ($pp_len + $sp_len);
+    my $actual_word = substr($word, $pp_len, $actual_len);
+
     _debug("Index of incorrect word is %d", $index);
     _debug("Correcting word %s (%d) with %s", $word, $pos, $correction);
+
+    if($pp_len or $sp_len) {
+        _debug("prefix punc: %s, suffix punc: %s, actual word: %s",
+               $prefix_punct, $suffix_punct, $actual_word);
+    }
 
     my $orig_length = length $word;
     my $new_length  = length $correction;
@@ -358,7 +382,7 @@ sub init {
 
     Irssi::signal_add('setup changed' => \&sig_setup_changed);
 
-    _debug("ASpell spellchecker loaded");
+    _debug("ASpell spellchecker Version %0.2f loaded", $VERSION);
 
     $corrections_active = 0;
     $index              = 0;
