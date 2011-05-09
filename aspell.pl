@@ -277,26 +277,34 @@ sub process_word {
     } elsif (not $aspell->check($word)) {
 
         _debug("Word '%s' is incorrect", $word);
-        $corrections_active = 1;
         @suggestions = get_suggestions($word);
-        highlight_incorrect_word($word_obj);
 
-        if (not temp_split_active()) {
+        if (not defined(@suggestions) or @suggestions == 0) {
+
+            spellcheck_next_word();
+
+        } elsif (not temp_split_active()) {
+
+            $corrections_active = 1;
+            highlight_incorrect_word($word_obj);
             _debug("Creating temp split to show candidates");
             create_temp_split();
+
         } else {
+
             print_suggestions();
         }
     } else {
+
         spellcheck_next_word();
     }
 }
 
 sub get_suggestions {
     my ($word) = @_;
-    my @suggestions = $aspell->suggest($word);
-    _debug("Candidates for '$word' are %s", join(", ", @suggestions));
-    return @suggestions;
+    my @candidates = $aspell->suggest($word);
+    _debug("Candidates for '$word' are %s", join(", ", @candidates));
+    return @candidates;
 }
 
 sub word_matches_chan_nick {
@@ -349,13 +357,14 @@ sub word_matches_chan_nick {
 # Read from the input line
 sub cmd_spellcheck_line {
     my ($args, $server, $witem) = @_;
+
     if (defined $witem) {
         $original_win_ref = $witem->window;
     } else {
         $original_win_ref = Irssi::active_win;
     }
 
-	my $inputline = Irssi::parse_special('$L');
+	my $inputline = _input();
     check_line($inputline);
 }
 
@@ -364,7 +373,7 @@ sub spellcheck_finish {
     close_temp_split();
 
     # stick the cursor at the end of the input line?
-    my $input = Irssi::parse_special('$L');
+    my $input = _input();
     my $end = length($input);
     Irssi::gui_input_set_pos($end);
 }
@@ -510,7 +519,7 @@ sub configure_split_win {
 
 sub correct_input_line_word {
     my ($word_obj, $correction) = @_;
-    my $input = Irssi::parse_special('$L');
+    my $input = _input();
 
     my $word = $word_obj->{word};
     my $pos  = $word_obj->{pos};
@@ -634,6 +643,10 @@ sub sig_setup_changed {
         reinit_aspell();
     }
 
+}
+
+sub _input {
+    return Irssi::parse_special('$L');
 }
 
 sub reinit_aspell {
