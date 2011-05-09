@@ -25,19 +25,29 @@ our %IRSSI = (
 
 # Settings cached vars
 my $DEBUG;
+# The colour that the suggestions are rendered in in the split windowpane.
 my $suggestion_colour;
+# Whether to bother spellchecking strings that match nicks in the current channel.
+my $ignore_chan_nicks;
 
+# current line, broken into hashref 'objects' storing word and positional data.
 my @word_pos_array;
+# index of word we're currently processing.
 my $index;
 
+# list of all possible suggestions for current misspelled word
 my @suggestions;
+# page number - we only show 10 results per page so we can select with 0-9
 my $suggestion_page;
 
+# the spellchecker object.
 my $aspell;
 
+# some window references to manage the window splitting and restoration
 my $split_win_ref;
 my $original_win_ref;
 
+# keypress handling flag.
 my $corrections_active;
 
 
@@ -109,6 +119,8 @@ sub check_line {
                    word         => $actual_word,
                    pos          => $actual_pos,
                    len          => $actual_len,
+                   prefix_punct => $prefix_punct,
+                   suffix_punct => $suffix_punct,
                   };
 
         push @word_pos_array, $obj;
@@ -123,9 +135,27 @@ sub check_line {
 sub process_word {
     my ($word_obj) = @_;
 
-    my $word = $word_obj->{word};
+    my $word    = $word_obj->{word};
 
-    if (not $aspell->check($word)) {
+    # That's a whole lotta tryin'!
+    my $channel = $original_win_ref->{active};
+    if (not defined $channel) {
+        if (exists Irssi::active_win()->{active}) {
+            $channel = Irssi::active_win()->{active};
+        } elsif (defined Irssi::active_win()) {
+            my @items = Irssi::active_win()->items;
+            $channel = $items[0] if @items;
+        } else {
+            $channel = Irssi::parse_special('$C');
+        }
+    }
+
+    if (word_matches_chan_nick($channel, $word_obj)) {
+        # skip to next word if it's actually a nick
+        # (and the option is set) - checked for in the matches() func.
+        spellcheck_next_word();
+
+    } elsif (not $aspell->check($word)) {
 
         _debug("Word '%s' is incorrect", $word);
         $corrections_active = 1;
@@ -150,6 +180,35 @@ sub get_suggestions {
     return @suggestions;
 }
 
+sub word_matches_chan_nick {
+    my ($channel, $word_obj) = @_;
+
+    return 0 unless $ignore_chan_nicks;
+    return 0 unless defined $channel and ref $channel;
+    my @nicks = $channlel->nicks();
+
+    my $nick_hash;
+
+    $nick_hash->{$_}++ for (map { $_->{nick} } @nicks);
+
+    _debug("Nicks: %s",  Dumper($nick_hash));
+
+    # try various combinations of the word with its surrounding
+    # punctuation.
+    my $plain_word = $word_obj->{word};
+    return 1 if exists $nick_hash->{$plain_word};
+    my $pp_word = $word_obj->{prefix_punct} . $word_obj->{word};
+    return 1 if exists $nick_hash->{$pp_word};
+    my $sp_word = $word_obj->{word} . $word_obj->{suffix_punct};
+    return 1 if exists $nick_hash->{$pp_word};
+    my $full_word =
+      $word_obj->{prefix_punct}
+      . $word_obj->{word}
+      . $word_obj->{suffix_punct};
+    return 1 if exists $nick_hash->{$full_word};
+
+    return 0;
+}
 
 # Read from the input line
 sub cmd_spellcheck_line {
@@ -395,11 +454,14 @@ sub sig_setup_changed {
       = Irssi::settings_get_bool('aspell_debug');
     $suggestion_colour
       = Irssi::settings_get_str('aspell_suggest_colour');
+    $ignore_chan_nicks
+      = Irssi::settings_get_bool('aspell_ignore_chan_nicks');
 }
 
 sub init {
     Irssi::settings_add_bool('aspellchecker', 'aspell_debug', 0);
     Irssi::settings_add_str('aspellchecker', 'aspell_suggest_colour', '%g');
+    Irssi::settings_add_bool('aspellchecker', 'aspell_ignore_chan_nicks', 1);
 
     sig_setup_changed();
 
