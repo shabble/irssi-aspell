@@ -261,8 +261,8 @@ sub sig_win_created {
 }
 
 sub configure_split_win {
-    $split_win_ref->command('win size 3');
-    $split_win_ref->command('win name ASpell Suggestions');
+    $split_win_ref->command('window size 3');
+    $split_win_ref->command('window name ASpell Suggestions');
 
     print_suggestions();
 }
