@@ -579,8 +579,9 @@ sub print_suggestions {
 
     # clear the window
     $split_win_ref->command("/^scrollback clear");
-    my $msg = sprintf('%s [Pg %d/%d] Select a number or SPC to ignore this word. Any '
-                      . 'other key cancels %s',
+    my $msg = sprintf('%s [Pg %d/%d] Select a number or <SPC> to skip this '
+                      'word. Press <i> to save this word to your personal '
+                      'dictionary. Any other key cancels%s',
                       '%_', $suggestion_page + 1, $pages + 1, '%_');
 
     my $word = $word_pos_array[$index]->{word};
