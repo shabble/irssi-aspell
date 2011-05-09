@@ -309,7 +309,7 @@ sub print_suggestions {
 
     # disable timestamps to ensure a clean window.
     my $orig_ts_level = Irssi::parse_special('$timestamp_level');
-    $s_win->command("^set timestamp_level $orig_ts_level -CLIENTCRAP");
+    $split_win_ref->command("^set timestamp_level $orig_ts_level -CLIENTCRAP");
 
     # clear the window
     $split_win_ref->command("/^scrollback clear");
@@ -323,7 +323,7 @@ sub print_suggestions {
     $split_win_ref->print('%_<' . $word . '>%_ ' .  join(" ", @visible));
 
     # restore timestamp settings.
-    $s_win->command("^set timestamp_level $orig_ts_level");
+    $split_win_ref->command("^set timestamp_level $orig_ts_level");
 
 }
 
