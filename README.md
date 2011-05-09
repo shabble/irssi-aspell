@@ -46,5 +46,7 @@ Shabble (`shabble@#irssi/Freenode`).
    seems too much effort.
 * Document More Better.
 * Something about manually editing (just the) incorrect word highlighted.
-
+* 'submit-on-enter' option, so you can add it to the multi binding of the
+  enter key to auto-spellcheck your input before you send it. After correcting
+  the last word, the line is sent.
 
