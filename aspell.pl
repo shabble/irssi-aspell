@@ -23,7 +23,9 @@ our %IRSSI = (
 #           Globals
 # ---------------------------
 
-my $DEBUG = 1;
+# Settings cached vars
+my $DEBUG;
+my $suggestion_colour;
 
 my @word_pos_array;
 my $index;
@@ -304,8 +306,11 @@ sub print_suggestions {
 
     my @visible = @suggestions[$bot..$top];
     my $i = 0;
-    my @visible
-      = map { sprintf("(%d) %s", $i++, $_) } @visible;
+
+    @visible = map {
+        '(%_' . $suggestion_colour . ($i++) . '%n) ' # bold/coloured selection num
+          . $suggestion_colour . $_ . '%n' # coloured selection option
+    } @visible;
 
     # disable timestamps to ensure a clean window.
     my $orig_ts_level = Irssi::parse_special('$timestamp_level');
@@ -320,7 +325,7 @@ sub print_suggestions {
     my $word = $word_pos_array[$index]->{word};
 
     $split_win_ref->print($msg);
-    $split_win_ref->print('%_<' . $word . '>%_ ' .  join(" ", @visible));
+    $split_win_ref->print('%_%R"' . $word . '"%n ' .  join(" ", @visible));
 
     # restore timestamp settings.
     $split_win_ref->command("^set timestamp_level $orig_ts_level");
@@ -328,11 +333,15 @@ sub print_suggestions {
 }
 
 sub sig_setup_changed {
-    $DEBUG = Irssi::settings_get_bool('aspell_debug');
+    $DEBUG
+      = Irssi::settings_get_bool('aspell_debug');
+    $suggestion_colour
+      = Irssi::settings_get_str('aspell_suggest_colour');
 }
 
 sub init {
     Irssi::settings_add_bool('aspellchecker', 'aspell_debug', 0);
+    Irssi::settings_add_str('aspellchecker', 'aspell_suggest_colour', '%g');
 
     sig_setup_changed();
 
