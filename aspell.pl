@@ -168,6 +168,8 @@ my $original_win_ref;
 my $corrections_active;
 
 
+#my $bacon = 1;
+
 # ---------------------------
 #      key constants
 # ---------------------------
@@ -277,9 +279,14 @@ sub process_word {
     } elsif (not $aspell->check($word)) {
 
         _debug("Word '%s' is incorrect", $word);
-        @suggestions = get_suggestions($word);
 
-        if (not defined(@suggestions) or @suggestions == 0) {
+        my $sugg_ref = get_suggestions($word);
+
+        if (defined $sugg_ref && ref($sugg_ref) eq 'ARRAY') {
+            @suggestions = @$sugg_ref;
+        }
+
+        if (scalar(@suggestions) == 0) {
 
             spellcheck_next_word();
 
@@ -304,7 +311,11 @@ sub get_suggestions {
     my ($word) = @_;
     my @candidates = $aspell->suggest($word);
     _debug("Candidates for '$word' are %s", join(", ", @candidates));
-    return @candidates;
+    # if ($bacon) {
+    return \@candidates;
+    # } else {
+    #     return undef;
+    # }
 }
 
 sub word_matches_chan_nick {
@@ -462,15 +473,6 @@ sub _print {
     Irssi::active_win->print('%g' . $str . '%n');
 }
 
-# Read from the argument list
-
-sub cmd_spell_args {
-    my ($inputline) = @_;
-    _print('%%R%%_ Sorry, this command is currently broken. %%_%%n');
-#    check_line($inputline);
-}
-
-
 sub temp_split_active () {
     return defined $split_win_ref;
 }
@@ -483,23 +485,46 @@ sub create_temp_split {
 }
 
 sub UNLOAD {
+    _print("%%RASpell spellchecker Version %0.2f unloading...%%n", $VERSION);
     close_temp_split();
 }
 
 sub close_temp_split {
 
-    if (temp_split_active()) {
-        Irssi::command("window close $split_win_ref->{refnum}");
-        undef $split_win_ref;
+    my $original_refnum = -1;
+    my $active_refnum   = -2;
+
+    my $active_win = Irssi::active_win();
+
+    if (defined $active_win && ref($active_win) =~ m/^Irssi::/) {
+        if (exists $active_win->{refnum}) {
+            $active_refnum = $active_win->{refnum};
+        }
     }
 
-    # restore original window focus
-    return unless defined $original_win_ref;
-    return unless ref $original_win_ref;
+    if (defined $original_win_ref && ref($original_win_ref) =~ m/^Irssi::/) {
+        if (exists $original_win_ref->{refnum}) {
+            $original_refnum = $original_win_ref->{refnum};
+        }
+    }
 
-    if (Irssi::active_win()->{refnum} != $original_win_ref->{refnum}) {
-        _debug("Winref: %s: %s", ref($original_win_ref), Dumper($original_win_ref));
-        ref($original_win_ref) and $original_win_ref->set_active();
+    if ($original_refnum != $active_refnum && $original_refnum > 0) {
+        Irssi::command("window goto $original_refnum");
+    }
+
+    if (defined($split_win_ref) && ref($split_win_ref) =~ m/^Irssi::/) {
+        if (exists $split_win_ref->{refnum}) {
+            my $split_refnum = $split_win_ref->{refnum};
+            _debug("split_refnum is %d", $split_refnum);
+            _debug("splitwin has: %s", join(", ", map { $_->{name} }
+                                            $split_win_ref->items()));
+            Irssi::command("window close $split_refnum");
+            undef $split_win_ref;
+        } else {
+            _debug("refnum isn't in the split_win_ref");
+        }
+    } else {
+        _debug("winref is undef or broken");
     }
 }
 
@@ -653,7 +678,13 @@ sub reinit_aspell {
     $aspell = Text::Aspell->new;
     $aspell->set_option('lang',     $aspell_language);
     $aspell->set_option('personal', $irssi_dict_filepath);
+    $aspell->create_speller();
 }
+
+# sub cmd_break_cands {
+#     $bacon = !$bacon;
+#     _print("Bacon is now: %s", $bacon?"true":"false");
+# }
 
 sub init {
     my $default_dict_path
@@ -675,7 +706,7 @@ sub init {
 
     Irssi::signal_add_first('gui key pressed' => \&sig_gui_key_pressed);
     Irssi::command_bind('spellcheck'          => \&cmd_spellcheck_line);
-    #Irssi::command_bind('spell', 'cmd_spell_args');
+    #Irssi::command_bind('breakon' => \&cmd_break_cands);
 }
 
 init();
