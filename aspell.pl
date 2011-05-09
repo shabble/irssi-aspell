@@ -122,6 +122,12 @@ sub get_suggestions {
 # Read from the input line
 sub cmd_spellcheck_line {
     my ($args, $server, $witem) = @_;
+    if (defined $witem) {
+        $original_win_ref = $witem->window;
+    } else {
+        $original_win_ref = Irssi::active_win;
+    }
+
 	my $inputline = Irssi::parse_special('$L');
     check_line($inputline);
 }
@@ -220,7 +226,7 @@ sub temp_split_active () {
 }
 
 sub create_temp_split {
-    $original_win_ref = Irssi::active_win();
+    #$original_win_ref = Irssi::active_win();
     Irssi::signal_add_first('window created', 'sig_win_created');
     Irssi::command('window new split');
     Irssi::signal_remove('window created', 'sig_win_created');
@@ -256,6 +262,8 @@ sub sig_win_created {
 
 sub configure_split_win {
     $split_win_ref->command('win size 3');
+    $split_win_ref->command('win name ASpell Suggestions');
+
     print_suggestions();
 }
 
