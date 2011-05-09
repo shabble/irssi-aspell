@@ -310,9 +310,10 @@ sub word_matches_chan_nick {
         # it appears empty on test dumps.
 
         exists $channel->{name}
-          and push @nicks, $channel->{name};
+          and push @nicks, { nick => $channel->{name} };
+
         exists $channel->{visible_name}
-          and push @nicks, $channel->{visible_name};
+          and push @nicks, { nick => $channel->{visible_name} };
 
     } elsif($channel->{type} eq 'CHANNEL') {
         @nicks = $channel->nicks();
