@@ -40,6 +40,10 @@ Shabble (`shabble@#irssi/Freenode`).
 * __DONE__ Make the N and P keys cycle though completions > 10
 * Do something clever about checking screen width vs suggestion
   string length, and wrap appropriately.
+ * Add more candidiates for wider screens and select by letter a-z etc?
+  (But then that starts to interfere with the other bindings. Hmmm.)
+ * Alternative is multiple numbers followed by enter to select, but that
+   seems too much effort.
 * Document More Better.
 * Something about manually editing (just the) incorrect word highlighted.
 
