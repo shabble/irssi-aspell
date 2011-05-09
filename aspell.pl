@@ -382,7 +382,7 @@ sub init {
 
     Irssi::signal_add('setup changed' => \&sig_setup_changed);
 
-    _debug("ASpell spellchecker Version %0.2f loaded", $VERSION);
+    _print("%%RASpell spellchecker Version %0.2f loaded%%n", $VERSION);
 
     $corrections_active = 0;
     $index              = 0;
