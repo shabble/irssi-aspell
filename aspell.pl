@@ -14,6 +14,19 @@ select the correct spellings for misspelled words in your input field.
 Copy into your F<~/.irssi/scripts/> directory and load with
 C</SCRIPT LOAD F<filename>>.
 
+=head1 SETUP
+
+Settings:
+
+    aspell_debug              0
+    aspell_ignore_chan_nicks  1
+    aspell_suggest_colour     '%g'
+    aspell_language           'en_GB'
+    aspell_irssi_dict         '~/.irssi/irssi.dict'
+
+B<Note:> Americans may wish to change the language to en_US. This can be done
+with the command C</SET aspell_language en_US> once the script is loaded.
+
 =head1 USAGE
 
 Bind a key to /spellcheck, and then invoke it when you have
@@ -68,6 +81,7 @@ See README file.
 
 =cut
 
+
 use warnings;
 use strict;
 use Data::Dumper;
@@ -108,12 +122,21 @@ our %IRSSI = (
 
 # Settings cached vars
 my $DEBUG;
+
 # The colour that the suggestions are rendered in in the split windowpane.
 my $suggestion_colour;
+
 # Whether to bother spellchecking strings that match nicks in the current channel.
 my $ignore_chan_nicks;
+
 # path to local aspell irssi dictionary file.
 my $irssi_dict_filepath;
+
+# Language to use. It follows the same format of the LANG environment variable
+# on most systems. It consists of the two letter ISO 639 language code and an
+# optional two letter ISO 3166 country code after a dash or underscore. The
+# default value is based on the value of the LC_MESSAGES locale.
+my $aspell_language;
 
 
 # OTHER GLOBALS
@@ -155,7 +178,7 @@ sub K_I   () { 105 }
 
 # used for printing stuff to the split window we don't want logged.
 sub PRN_LEVEL () { MSGLEVEL_CLIENTCRAP | MSGLEVEL_NEVER }
-
+sub AS_CFG    () { "aspellchecker" }
 
 # ---------------------------
 #        Teh Codez
@@ -564,22 +587,33 @@ sub sig_setup_changed {
     $ignore_chan_nicks
       = Irssi::settings_get_bool('aspell_ignore_chan_nicks');
 
+
     my $old_filepath = $irssi_dict_filepath;
 
     $irssi_dict_filepath
       = Irssi::settings_get_str('aspell_irssi_dict');
 
-    if (defined $old_filepath and
-        $irssi_dict_filepath ne $old_filepath) {
-
-        reinit_aspell($irssi_dict_filepath);
+    if ((not defined $old_filepath) or
+        ($irssi_dict_filepath ne $old_filepath)) {
+        reinit_aspell();
     }
+
+    my $old_lang = $aspell_language;
+
+    $aspell_language
+      = Irssi::settings_get_str('aspell_language');
+
+    if ((not defined $old_lang) or
+    ($old_lang ne $aspell_language)) {
+        reinit_aspell();
+    }
+
 }
 
 sub reinit_aspell {
-    my ($filepath) = @_;
     $aspell = Text::Aspell->new;
-    $aspell->set_option('master', $filepath);
+    $aspell->set_option('lang',     $aspell_language);
+    $aspell->set_option('personal', $irssi_dict_filepath);
 }
 
 # sub initialise_irssi_dict {
@@ -588,11 +622,12 @@ sub reinit_aspell {
 # }
 sub init {
     my $default_dict_path
-      = File::Spec->catfile(Irssi::get_irssi_dir, "irssi.dict");
-    Irssi::settings_add_bool('aspellchecker', 'aspell_debug', 0);
-    Irssi::settings_add_bool('aspellchecker', 'aspell_ignore_chan_nicks', 1);
-    Irssi::settings_add_str('aspellchecker', 'aspell_suggest_colour', '%g');
-    Irssi::settings_add_str('aspellchecker', 'aspell_irssi_dict', $default_dict_path);
+      = File::Spec->catfile(Irssi::get_irssi_dir,                 "irssi.dict");
+    Irssi::settings_add_bool(AS_CFG, 'aspell_debug',              0);
+    Irssi::settings_add_bool(AS_CFG, 'aspell_ignore_chan_nicks',  1);
+    Irssi::settings_add_str(AS_CFG,  'aspell_suggest_colour',     '%g');
+    Irssi::settings_add_str(AS_CFG,  'aspell_language',           'en_GB');
+    Irssi::settings_add_str(AS_CFG,  'aspell_irssi_dict',   $default_dict_path);
 
     sig_setup_changed();
 
