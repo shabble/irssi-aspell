@@ -72,6 +72,14 @@ use warnings;
 use strict;
 use Data::Dumper;
 use Irssi;
+use Irssi::Irc;
+use Irssi::TextUI;
+
+use File::Spec;
+
+# Magic. Somehow remedies:
+# "Can't locate object method "nicks" via package "Irssi::Irc::Query" Bug
+{ package Irssi::Nick }
 
 eval {
     use Text::Aspell;
@@ -82,7 +90,7 @@ if ($@ && $@ =~ m/Can't locate/) {
 }
 
 
-our $VERSION = '1.3';
+our $VERSION = '1.4';
 our %IRSSI = (
               authors     => 'IsaacG, Enscienced by Shabble',
               name        => 'aspell',
@@ -95,12 +103,21 @@ our %IRSSI = (
 #           Globals
 # ---------------------------
 
+# CONFIG SETTINGS
+# ===============
+
 # Settings cached vars
 my $DEBUG;
 # The colour that the suggestions are rendered in in the split windowpane.
 my $suggestion_colour;
 # Whether to bother spellchecking strings that match nicks in the current channel.
 my $ignore_chan_nicks;
+# path to local aspell irssi dictionary file.
+my $irssi_dict_filepath;
+
+
+# OTHER GLOBALS
+# =============
 
 # current line, broken into hashref 'objects' storing word and positional data.
 my @word_pos_array;
@@ -138,6 +155,8 @@ sub K_I   () { 105 }
 
 # used for printing stuff to the split window we don't want logged.
 sub PRN_LEVEL () { MSGLEVEL_CLIENTCRAP | MSGLEVEL_NEVER }
+
+
 # ---------------------------
 #        Teh Codez
 # ---------------------------
@@ -528,12 +547,36 @@ sub sig_setup_changed {
       = Irssi::settings_get_str('aspell_suggest_colour');
     $ignore_chan_nicks
       = Irssi::settings_get_bool('aspell_ignore_chan_nicks');
+
+    my $old_filepath = $irssi_dict_filepath;
+
+    $irssi_dict_filepath
+      = Irssi::settings_get_str('aspell_irssi_dict');
+
+    if (defined $old_filepath and
+        $irssi_dict_filepath ne $old_filepath) {
+
+        reinit_aspell($irssi_dict_filepath);
+    }
 }
 
+sub reinit_aspell {
+    my ($filepath) = @_;
+    $aspell = Text::Aspell->new;
+    $aspell->set_option('master', $filepath);
+}
+
+# sub initialise_irssi_dict {
+#     my ($file) = @_;
+
+# }
 sub init {
+    my $default_dict_path
+      = File::Spec->catfile(Irssi::get_irssi_dir, "irssi.dict");
     Irssi::settings_add_bool('aspellchecker', 'aspell_debug', 0);
-    Irssi::settings_add_str('aspellchecker', 'aspell_suggest_colour', '%g');
     Irssi::settings_add_bool('aspellchecker', 'aspell_ignore_chan_nicks', 1);
+    Irssi::settings_add_str('aspellchecker', 'aspell_suggest_colour', '%g');
+    Irssi::settings_add_str('aspellchecker', 'aspell_irssi_dict', $default_dict_path);
 
     sig_setup_changed();
 
@@ -546,11 +589,7 @@ sub init {
 
     Irssi::signal_add_first('gui key pressed' => \&sig_gui_key_pressed);
     Irssi::command_bind('spellcheck', \&cmd_spellcheck_line);
-
-    Irssi::command_bind('spell', 'cmd_spell_args');
-    #Irssi::command("/^bind meta-d /spellcheck");
-    $aspell = Text::Aspell->new;
-
+    #Irssi::command_bind('spell', 'cmd_spell_args');
 }
 
 init();
