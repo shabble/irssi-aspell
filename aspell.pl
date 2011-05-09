@@ -276,7 +276,23 @@ sub word_matches_chan_nick {
 
     return 0 unless $ignore_chan_nicks;
     return 0 unless defined $channel and ref $channel;
-    my @nicks = $channel->nicks();
+
+    my @nicks;
+    if (not exists ($channel->{type}) {
+        return 0;
+    } elsif ($channel->{type} eq 'QUERY') {
+
+        # TODO: Maybe we need to parse ->{address} instead, but
+        # it appears empty on test dumps.
+
+        exists $channel->{name}
+          and push @nicks, $channel->{name};
+        exists $channel->{visible_name}
+          and push @nicks, $channel->{visible_name};
+
+    } elsif($channel->{type} eq 'CHANNEL') {
+        @nicks = $channel->nicks();
+    }
 
     my $nick_hash;
 
