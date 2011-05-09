@@ -45,7 +45,7 @@ Modifications by Shabble (`shabble@#irssi/Freenode`).
 
 ## BUGS:
 
-* Consumes punctuation around a corrected word
+* __MAYBE FIXED?__ Consumes punctuation around a corrected word
 
 
 ## TODO:

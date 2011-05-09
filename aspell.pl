@@ -185,7 +185,7 @@ sub word_matches_chan_nick {
 
     return 0 unless $ignore_chan_nicks;
     return 0 unless defined $channel and ref $channel;
-    my @nicks = $channlel->nicks();
+    my @nicks = $channel->nicks();
 
     my $nick_hash;
 
