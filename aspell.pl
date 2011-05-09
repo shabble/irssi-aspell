@@ -110,7 +110,7 @@ if ($@ && $@ =~ m/Can't locate/) {
 our $VERSION = '1.5';
 our %IRSSI = (
               authors     => 'Isaac Good (yitz_), Tom Feist (shabble)',
-              contact     => 'irssi@isaacgood.com, shabble+irssi@metavore.org'
+              contact     => 'irssi@isaacgood.com, shabble+irssi@metavore.org',
               name        => 'aspell',
               description => 'ASpell spellchecking system for Irssi',
               license     => 'MIT',
@@ -584,8 +584,8 @@ sub print_suggestions {
     # clear the window
     $split_win_ref->command("/^scrollback clear");
     my $msg = sprintf('%s [Pg %d/%d] Select a number or <SPC> to skip this '
-                      'word. Press <i> to save this word to your personal '
-                      'dictionary. Any other key cancels%s',
+                      . 'word. Press <i> to save this word to your personal '
+                      . 'dictionary. Any other key cancels%s',
                       '%_', $suggestion_page + 1, $pages + 1, '%_');
 
     my $word = $word_pos_array[$index]->{word};
@@ -661,7 +661,7 @@ sub init {
     $index              = 0;
 
     Irssi::signal_add_first('gui key pressed' => \&sig_gui_key_pressed);
-    Irssi::command_bind('spellcheck', \&cmd_spellcheck_line);
+    Irssi::command_bind('spellcheck'          => \&cmd_spellcheck_line);
     #Irssi::command_bind('spell', 'cmd_spell_args');
 }
 
