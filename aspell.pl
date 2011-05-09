@@ -54,6 +54,8 @@ sub K_N   () { 110 }
 sub K_P   () { 112 }
 sub K_I   () { 105 }
 
+# used for printing stuff to the split window we don't want logged.
+sub PRN_LEVEL () { MSGLEVEL_CLIENTCRAP | MSGLEVEL_NEVER }
 # ---------------------------
 #        Teh Codez
 # ---------------------------
@@ -253,7 +255,7 @@ sub sig_win_created {
 }
 
 sub configure_split_win {
-    $split_win_ref->command("win size 4");
+    $split_win_ref->command('win size 3');
     print_suggestions();
 }
 
@@ -324,8 +326,9 @@ sub print_suggestions {
 
     my $word = $word_pos_array[$index]->{word};
 
-    $split_win_ref->print($msg);
-    $split_win_ref->print('%_%R"' . $word . '"%n ' .  join(" ", @visible));
+    $split_win_ref->print($msg, PRN_LEVEL);                   # header
+    $split_win_ref->print('%_%R"' . $word . '"%n '            # erroneous word
+                          .  join(" ", @visible), PRN_LEVEL); # suggestions
 
     # restore timestamp settings.
     $split_win_ref->command("^set timestamp_level $orig_ts_level");
