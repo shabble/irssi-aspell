@@ -43,9 +43,15 @@ Original by IsaacG (`yitz_@#irssi/Freenode`),
 
 Modifications by Shabble (`shabble@#irssi/Freenode`).
 
+## BUGS:
+
+* Consumes punctuation around a corrected word
+
+
 ## TODO:
 
 * Configuration options to select dictionaries
+ * Option to ignore nicks in channel
 * Support for saving to a user dictionary
 * __DONE__ Make the N and P keys cycle though completions > 10
 * Do something clever about checking screen width vs suggestion

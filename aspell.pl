@@ -79,8 +79,40 @@ sub check_line {
     _debug('check_line processing "%s"', $line);
 
     while ($line =~ m/\G(\S+)(\s*)/g) {
-        push @word_pos_array, { word => $1, pos => $pos };
-        $pos += length ($1.$2);
+        my ($word, $ws) = ($1, $2); # word, whitespace
+
+        my $prefix_punct = '';
+        my $suffix_punct = '';
+
+        if ($word =~ m/^([^a-zA-Z0-9]+)/) {
+            $prefix_punct = $1;
+        }
+        if ($word =~ m/([^a-zA-Z0-9]+)$/) {
+            $suffix_punct = $1;
+        }
+
+        my $pp_len = length($prefix_punct);
+        my $sp_len = length($suffix_punct);
+
+        my $actual_len  = length($word) - ($pp_len + $sp_len);
+        my $actual_word = substr($word, $pp_len, $actual_len);
+
+        if($DEBUG and ($pp_len or $sp_len)) {
+            _debug("prefix punc: %s, suffix punc: %s, actual word: %s",
+                   $prefix_punct, $suffix_punct, $actual_word);
+        }
+
+
+        my $actual_pos  = $pos + $pp_len;
+
+        my $obj = {
+                   word         => $actual_word,
+                   pos          => $actual_pos,
+                   len          => $actual_len,
+                  };
+
+        push @word_pos_array, $obj;
+        $pos += length ($word . $ws);
     }
 
     return unless @word_pos_array > 0;
@@ -274,57 +306,48 @@ sub correct_input_line_word {
 
     my $word = $word_obj->{word};
     my $pos  = $word_obj->{pos};
+    my $len  = $word_obj->{len};
 
     # handle punctuation.
     # - Internal punctuation: "they're" "Bob's"  should be replaced if necessary
     # - external punctuation: "eg:" should not.
     # this will also have impact on the position adjustments.
 
-    my $prefix_punct = '';
-    my $suffix_punct = '';
-
-    if ($word =~ m/^([^a-zA-Z0-9]+)/) {
-        $prefix_punct = $1;
-    }
-    if ($word =~ m/([^a-zA-Z0-9]+)$/) {
-        $suffix_punct = $1;
-    }
-    my ($pp_len, $sp_len) = (length($prefix_punct), length($suffix_punct));
-    my $actual_len  = length($word) - ($pp_len + $sp_len);
-    my $actual_word = substr($word, $pp_len, $actual_len);
-
     _debug("Index of incorrect word is %d", $index);
     _debug("Correcting word %s (%d) with %s", $word, $pos, $correction);
 
-    if($pp_len or $sp_len) {
-        _debug("prefix punc: %s, suffix punc: %s, actual word: %s",
-               $prefix_punct, $suffix_punct, $actual_word);
-    }
 
-    my $orig_length = length $word;
+    #my $corrected_word = $prefix_punct . $correction . $suffix_punct;
+
     my $new_length  = length $correction;
 
-    my $diff = $new_length - $orig_length;
-
+    my $diff        = $new_length - $len;
     _debug("diff between $word and $correction is $diff");
 
+    # record the fix in the array.
     $word_pos_array[$index] = { word => $correction, pos => $pos + $diff };
-    substr($input, $pos, length($word)) = $correction;
+    # do the actual fixing of the input string
+    substr($input, $pos, $len) = $correction;
+
+
     # now we have to go through and fix up all teh positions since
     # the correction might be a different length.
 
-    #starting at $index, add the diff to each position.
     foreach my $new_obj (@word_pos_array[$index..$#word_pos_array]) {
+        #starting at $index, add the diff to each position.
         $new_obj->{pos} += $diff;
     }
 
     _debug("Setting input to new value: '%s'", $input);
+
+    # put the corrected string back into the input field.
     Irssi::gui_input_set($input);
 
     _debug("-------------------------------------------------");
     spellcheck_next_word();
 }
 
+# move the cursor to the beginning of the word in question.
 sub highlight_incorrect_word {
     my ($word_obj) = @_;
     Irssi::gui_input_set_pos($word_obj->{pos});
