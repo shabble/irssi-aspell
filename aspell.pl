@@ -1,3 +1,73 @@
+=pod
+
+=head1 NAME
+
+aspell.pl
+
+=head1 DESCRIPTION
+
+A spellchecker based on GNU ASpell which allows you to interactively
+select the correct spellings for misspelled words in your input field.
+
+=head1 INSTALLATION
+
+Copy into your F<~/.irssi/scripts/> directory and load with
+C</SCRIPT LOAD F<filename>>.
+
+=head1 USAGE
+
+Bind a key to /spellcheck, and then invoke it when you have
+an input-line that you wish to check.
+
+If it is entirely correct, nothing will appear to happen. This is a good thing.
+Otherwise, a small split window will appear at the top of the Irssi session
+showing you the misspelled word, and a selection of 10 possible candidates.
+
+You may select one of the by pressing the appropriate number from C<0-9>, or
+skip the word entirely by hitting the C<Space> bar.
+
+If there are more than 10 possible candidates for a word, you can cycle through
+the 10-word "pages" with the C<n> (next) and C<p> (prev) keys.
+
+Pressing Escape, or any other key, will exit the spellcheck altogether, although
+it can be later restarted.
+
+=head1 AUTHORS
+
+Copyright E<copy> 2011 Isaac G Feist C<E<lt>https://github.com/IsaacGgE<gt>>
+
+Copyright E<copy> 2011 Tom Feist C<E<lt>shabble+irssi@metavore.orgE<gt>>
+
+=head1 LICENCE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+=head1 BUGS
+
+See README file.
+
+=head1 TODO
+
+See README file.
+
+=cut
+
 use warnings;
 use strict;
 use Data::Dumper;
@@ -17,6 +87,8 @@ our %IRSSI = (
               authors     => 'IsaacG, Enscienced by Shabble',
               name        => 'aspell',
               description => 'ASpell spellchecking system for Irssi',
+              license     => 'MIT',
+              updated     => "2011-05-09",
              );
 
 # ---------------------------
