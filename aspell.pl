@@ -146,6 +146,7 @@ my $aspell_language;
 my @word_pos_array;
 # index of word we're currently processing.
 my $index;
+my $active_word_obj;
 
 # list of all possible suggestions for current misspelled word
 my @suggestions;
@@ -249,7 +250,7 @@ sub check_line {
 sub process_word {
     my ($word_obj) = @_;
 
-    my $word    = $word_obj->{word};
+    my $word = $word_obj->{word};
 
     # That's a whole lotta tryin'!
     my $channel = $original_win_ref->{active};
@@ -301,7 +302,7 @@ sub word_matches_chan_nick {
     return 0 unless defined $channel and ref $channel;
 
     my @nicks;
-    if (not exists ($channel->{type}) {
+    if (not exists ($channel->{type})) {
         return 0;
     } elsif ($channel->{type} eq 'QUERY') {
 
@@ -356,6 +357,11 @@ sub cmd_spellcheck_line {
 sub spellcheck_finish {
     $corrections_active = 0;
     close_temp_split();
+
+    # stick the cursor at the end of the input line?
+    my $input = Irssi::parse_special('$L');
+    my $end = length($input);
+    Irssi::gui_input_set_pos($end);
 }
 
 sub sig_gui_key_pressed {
@@ -375,7 +381,15 @@ sub sig_gui_key_pressed {
         _debug("skipping word");
         spellcheck_next_word();
     } elsif ($key == K_I) {
-        _print("Not implemented yet :(");
+
+        my $current_word = $word_pos_array[$index];
+        $aspell->add_to_personal($current_word->{word});
+        $aspell->save_all_word_lists();
+
+        _print('Saved %s to personal dictionary', $current_word->{word});
+
+        spellcheck_next_word();
+
     } elsif ($key == K_N) { # next 10 results
 
         if ((scalar @suggestions) > (10 * ($suggestion_page + 1))) {
@@ -588,20 +602,26 @@ sub sig_setup_changed {
       = Irssi::settings_get_bool('aspell_ignore_chan_nicks');
 
 
+
+    my $old_lang = $aspell_language;
+
+    $aspell_language
+      = Irssi::settings_get_str('aspell_language');
+
+
     my $old_filepath = $irssi_dict_filepath;
 
     $irssi_dict_filepath
       = Irssi::settings_get_str('aspell_irssi_dict');
+
+    _debug("Filepath: $irssi_dict_filepath");
 
     if ((not defined $old_filepath) or
         ($irssi_dict_filepath ne $old_filepath)) {
         reinit_aspell();
     }
 
-    my $old_lang = $aspell_language;
-
-    $aspell_language
-      = Irssi::settings_get_str('aspell_language');
+    _debug("Language: $aspell_language");
 
     if ((not defined $old_lang) or
     ($old_lang ne $aspell_language)) {
@@ -616,10 +636,6 @@ sub reinit_aspell {
     $aspell->set_option('personal', $irssi_dict_filepath);
 }
 
-# sub initialise_irssi_dict {
-#     my ($file) = @_;
-
-# }
 sub init {
     my $default_dict_path
       = File::Spec->catfile(Irssi::get_irssi_dir,                 "irssi.dict");
