@@ -17,6 +17,17 @@ If you're really masochistic, you could just install from the tarball.
 You'll probably need to get and configure aspell with your chosen language
 dictionary as well. The internets will tell you how.
 
+## Usage
+
+* `/script load aspell.pl` after putting it in `~/.irssi/scripts/`.
+* Bind a key to /spellcheck, something like:
+* `/bind meta-d /spellcheck`
+* Type something (badly).
+* Hit Meta-d
+* select from the numerical options at the top of the screen, or space to skip
+  to the next word.  Any other key cancels.
+  
+  
 ## Authors
 
 Original by IsaacG (`yitz_@#irssi/Freenode`), Modifications by
@@ -30,5 +41,6 @@ Shabble (`shabble@#irssi/Freenode`).
 * Do something clever about checking screen width vs suggestion
   string length, and wrap appropriately.
 * Document More Better.
+* Something about manually editing (just the) incorrect word highlighted.
 
 
