@@ -47,7 +47,7 @@ it can be later restarted.
 
 =head1 AUTHORS
 
-Copyright E<copy> 2011 Isaac G Feist C<E<lt>https://github.com/IsaacGgE<gt>>
+Copyright E<copy> 2011 Isaac Good C<E<lt>irssi@isaacgood.comE<gt>>
 
 Copyright E<copy> 2011 Tom Feist C<E<lt>shabble+irssi@metavore.orgE<gt>>
 
@@ -93,6 +93,9 @@ use File::Spec;
 
 # Magic. Somehow remedies:
 # "Can't locate object method "nicks" via package "Irssi::Irc::Query" Bug
+# Actually, that's a bunch of lies, but I'm pretty sure there is something
+# it fixes. Otherwise, a bit of cargo-culting can't hurt.
+
 { package Irssi::Nick }
 
 eval {
@@ -104,9 +107,10 @@ if ($@ && $@ =~ m/Can't locate/) {
 }
 
 
-our $VERSION = '1.4';
+our $VERSION = '1.5';
 our %IRSSI = (
-              authors     => 'IsaacG, Enscienced by Shabble',
+              authors     => 'Isaac Good (yitz_), Tom Feist (shabble)',
+              contact     => 'irssi@isaacgood.com, shabble+irssi@metavore.org'
               name        => 'aspell',
               description => 'ASpell spellchecking system for Irssi',
               license     => 'MIT',
