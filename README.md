@@ -9,9 +9,14 @@ This script requires that you have installed the
 [Text::Aspell](http://search.cpan.org/~hank/Text-Aspell-0.09/Aspell.pm) module
 from CPAN.
 
-This is probably in your package manager on *nix
-(`apt-get install libtext-aspell-perl` for Debian/Ubuntu), or you can
-install it via the cpan or cpan-minus applications.
+This is probably in your package manager on *nix:
+
+* `apt-get install libtext-aspell-perl` for Debian/Ubuntu
+* `port install p5-text-aspell` for MacPorts
+* `pkg_add -r p5-Text-Aspell` for BSD
+
+or you can install it via the cpan (`cpan Text::Aspell`) or 
+cpan-minus (`cpanm Text::Aspell`) applications.
 
 If you're really masochistic, you could just install from the tarball.
 You'll probably need to get and configure aspell with your chosen language
@@ -27,11 +32,16 @@ dictionary as well. The internets will tell you how.
 * select from the numerical options at the top of the screen, or space to skip
   to the next word.  Any other key cancels.
   
-  
+__NOTE:__ If you use existing split windows, you might notice some weirdness.
+If so, please submit a bug report, preferably with a screenshot.
+
 ## Authors
 
-Original by IsaacG (`yitz_@#irssi/Freenode`), Modifications by
-Shabble (`shabble@#irssi/Freenode`).
+Copyright Somewhere, Something, &copy; 2011
+
+Original by IsaacG (`yitz_@#irssi/Freenode`), 
+
+Modifications by Shabble (`shabble@#irssi/Freenode`).
 
 ## TODO:
 
