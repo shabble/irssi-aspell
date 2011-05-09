@@ -306,6 +306,12 @@ sub print_suggestions {
     my $i = 0;
     my @visible
       = map { sprintf("(%d) %s", $i++, $_) } @visible;
+
+    # disable timestamps to ensure a clean window.
+    my $orig_ts_level = Irssi::parse_special('$timestamp_level');
+    $s_win->command("^set timestamp_level $orig_ts_level -CLIENTCRAP");
+
+    # clear the window
     $split_win_ref->command("/^scrollback clear");
     my $msg = sprintf('%s [Pg %d/%d] Select a number or SPC to ignore this word. Any '
                       . 'other key cancels %s',
@@ -315,6 +321,10 @@ sub print_suggestions {
 
     $split_win_ref->print($msg);
     $split_win_ref->print('%_<' . $word . '>%_ ' .  join(" ", @visible));
+
+    # restore timestamp settings.
+    $s_win->command("^set timestamp_level $orig_ts_level");
+
 }
 
 sub sig_setup_changed {
