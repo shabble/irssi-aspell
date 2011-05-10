@@ -107,7 +107,7 @@ if ($@ && $@ =~ m/Can't locate/) {
 }
 
 
-our $VERSION = '1.5';
+our $VERSION = '1.6';
 our %IRSSI = (
               authors     => 'Isaac Good (yitz_), Tom Feist (shabble)',
               contact     => 'irssi@isaacgood.com, shabble+irssi@metavore.org',
