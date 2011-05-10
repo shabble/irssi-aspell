@@ -271,9 +271,15 @@ sub process_word {
         }
     }
 
-    if (word_matches_chan_nick($channel, $word_obj)) {
+    if ($word =~ m/^\d+$/) {
+
+        _debug("Skipping $word that is entirely numeric");
+        spellcheck_next_word(); # aspell thinks numbers are wrong.
+
+    } elsif (word_matches_chan_nick($channel, $word_obj)) {
         # skip to next word if it's actually a nick
         # (and the option is set) - checked for in the matches() func.
+        _debug("Skipping $word that matches nick in channel");
         spellcheck_next_word();
 
     } elsif (not $aspell->check($word)) {
