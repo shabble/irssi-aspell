@@ -19,8 +19,9 @@ or you can install it via the cpan (`cpan Text::Aspell`) or
 cpan-minus (`cpanm Text::Aspell`) applications.
 
 If you're really masochistic, you could just install from the tarball.
-You'll probably need to get and configure aspell with your chosen language
-dictionary as well. The internets will tell you how.
+
+* You'll probably need to get and configure aspell with your chosen language
+dictionary as well. The [internets](http://aspell.net/) will tell you how.
 
 ## Usage
 
