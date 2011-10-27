@@ -26,7 +26,7 @@ dictionary as well. The [internets](http://aspell.net/) will tell you how.
 ## Usage
 
 * `/script load aspell.pl` after putting it in `~/.irssi/scripts/`.
-* Bind a key to /spellcheck, something like:
+* Bind a key to `/spellcheck`, something like:
 * `/bind meta-d /spellcheck`
 * Type something (badly).
 * Hit Meta-d

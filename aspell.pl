@@ -107,14 +107,14 @@ if ($@ && $@ =~ m/Can't locate/) {
 }
 
 
-our $VERSION = '1.6';
+our $VERSION = '1.6.1';
 our %IRSSI = (
               authors     => 'Isaac Good (yitz_), Tom Feist (shabble)',
               contact     => 'irssi@isaacgood.com, shabble+irssi@metavore.org',
               name        => 'aspell',
               description => 'ASpell spellchecking system for Irssi',
               license     => 'MIT',
-              updated     => "2011-05-09",
+              updated     => "2011-10-27",
              );
 
 # ---------------------------
@@ -405,8 +405,8 @@ sub sig_gui_key_pressed {
         spellcheck_finish();
 
     } elsif ($key >= K_0 && $key <= K_9) {
-        _debug("Selecting word: $char");
-        spellcheck_select_word($char);
+        _debug("Selecting word: $char of page: $suggestion_page");
+        spellcheck_select_word($char + ($suggestion_page * 10));
 
     } elsif ($key == K_SPC) {
         _debug("skipping word");
@@ -459,9 +459,16 @@ sub spellcheck_next_word {
 }
 sub spellcheck_select_word {
     my ($num) = @_;
+
+    if ($num > $#suggestions) {
+        _debug("$num past end of suggestions list.");
+        return 0;
+    }
+
     my $word = $suggestions[$num];
     _debug("Selected word $num: $word as correction");
     correct_input_line_word($word_pos_array[$index], $word);
+    return 1;
 }
 
 sub _debug {
