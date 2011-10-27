@@ -498,7 +498,7 @@ sub create_temp_split {
 }
 
 sub UNLOAD {
-    _print("%%RASpell spellchecker Version %0.2f unloading...%%n", $VERSION);
+    _print("%%RASpell spellchecker Version %s unloading...%%n", $VERSION);
     close_temp_split();
 }
 
@@ -712,7 +712,7 @@ sub init {
 
     Irssi::signal_add('setup changed' => \&sig_setup_changed);
 
-    _print("%%RASpell spellchecker Version %0.2f loaded%%n", $VERSION);
+    _print("%%RASpell spellchecker Version %s loaded%%n", $VERSION);
 
     $corrections_active = 0;
     $index              = 0;
